@@ -12,11 +12,11 @@
 #define AP_1HYPH_NO_ARG 32 // Contains 1 hyphen and no arguments. Ex: s = -
 #define AP_2HYPH_NO_ARG 64 // Contains 2 hyphens and no arguments. Ex: s = --
 
-#define AP_CHECK_0HYPH_OK(arg) (((arg) & AP_0HYPH_OK) != 0)
-#define AP_CHECK_1HYPH_OK(arg) (((arg) & AP_1HYPH_OK) != 0)
-#define AP_CHECK_2HYPH_OK(arg) (((arg) & AP_2HYPH_OK) != 0)
-#define AP_CHECK_NOT_OK(arg) ((((arg) & AP_EMPTY) != 0) || (((arg) & AP_INVALID) != 0))
-#define AP_CHECK_NO_ARG(arg) ((((arg) & AP_1HYPH_NO_ARG) != 0) || (((arg) & AP_2HYPH_NO_ARG) != 0))
+#define AP_CHECK_0HYPH_OK(arg) (((arg.status) & AP_0HYPH_OK) != 0)
+#define AP_CHECK_1HYPH_OK(arg) (((arg.status) & AP_1HYPH_OK) != 0)
+#define AP_CHECK_2HYPH_OK(arg) (((arg.status) & AP_2HYPH_OK) != 0)
+#define AP_CHECK_NOT_OK(arg) ((((arg.status) & AP_EMPTY) != 0) || (((arg.status) & AP_INVALID) != 0))
+#define AP_CHECK_NO_ARG(arg) ((((arg.status) & AP_1HYPH_NO_ARG) != 0) || (((arg.status) & AP_2HYPH_NO_ARG) != 0))
 
 struct Arg {
   const char *value;
@@ -26,7 +26,9 @@ struct Arg {
 
 #ifdef AP_IMPL
 
-struct Arg ap_parse(char *str)
+static const char *__ap_prog_name = NULL;
+
+struct Arg ap_parse(char *str, char delim)
 {
   struct Arg arg = {0};
 
@@ -40,18 +42,18 @@ struct Arg ap_parse(char *str)
   if (len == 0) {
     arg.status |= AP_EMPTY;
   }
-  else if (len == 1 && *str == '-') {
+  else if (len == 1 && *str == delim) {
     arg.status |= AP_1HYPH_NO_ARG;
   }
-  else if (len == 2 && str[0] == '-' && str[1] == '-') {
+  else if (len == 2 && str[0] == delim && str[1] == delim) {
     arg.status |= AP_2HYPH_NO_ARG;
   }
-  else if (str[0] == '-' && str[1] == '-') {
+  else if (str[0] == delim && str[1] == delim) {
     arg.status |= AP_2HYPH_OK;
     arg.len = len-2;
     arg.value = str+2;
   }
-  else if (str[0] == '-') {
+  else if (str[0] == delim) {
     arg.status |= AP_1HYPH_OK;
     arg.len = len-1;
     arg.value = str+1;
@@ -67,11 +69,21 @@ struct Arg ap_parse(char *str)
 
 char *ap_eat(int *argc, char ***argv)
 {
+  static int prog = 0;
+  if (!prog) {
+    __ap_prog_name = *(*argv);
+    prog = 1;
+  }
   if (*argc == 0) {
     return NULL;
   }
   (*argc)--;
   return *(*argv)++;
+}
+
+const char *ap_prog_name(void)
+{
+  return __ap_prog_name ? __ap_prog_name : NULL;
 }
 
 #endif // AP_IMPL
