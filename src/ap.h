@@ -83,7 +83,7 @@ char *ap_eat(int *argc, char ***argv)
 
 const char *ap_prog_name(void)
 {
-  return __ap_prog_name ? __ap_prog_name : NULL;
+  return __ap_prog_name;
 }
 
 #endif // AP_IMPL
